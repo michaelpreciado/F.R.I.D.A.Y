@@ -11,6 +11,22 @@ const API_BASE_URL = import.meta.env.MODE === 'production'
   : '/api'; // Use Vite proxy in development
 
 const CHAT_ENDPOINT = `${API_BASE_URL}/chat`;
+export const TRANSCRIBE_ENDPOINT = `${API_BASE_URL}/transcribe`;
+
+// Google Custom Search endpoint
+export const SEARCH_ENDPOINT = `${API_BASE_URL}/search`;
+
+/**
+ * Perform a web search via backend and return top results.
+ */
+export async function webSearch(query: string): Promise<{ title: string; snippet: string; link: string }[]> {
+  const response = await fetch(`${SEARCH_ENDPOINT}?query=${encodeURIComponent(query)}`);
+  if (!response.ok) {
+    throw new Error(`Search API error: ${response.status}`);
+  }
+  const data = await response.json();
+  return data.results || [];
+}
 
 // Log environment variables for debugging
 console.log('API mode:', import.meta.env.MODE);

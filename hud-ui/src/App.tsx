@@ -7,12 +7,12 @@ function App() {
   const [ttsEnabled, setTtsEnabled] = useState(true);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
+    <div className="relative min-h-screen w-full">
       {/* 3D Background */}
       <NeonBackground />
       
       {/* Main Content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 overflow-hidden">
+      <div className="absolute inset-0 flex flex-col items-center justify-start md:justify-center p-4 overflow-hidden">
         <div className="w-full max-w-4xl h-full md:h-auto flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between mb-2 md:mb-4 px-1 py-2">

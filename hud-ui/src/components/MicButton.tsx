@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useStore } from '../store';
+import { TRANSCRIBE_ENDPOINT } from '../services/api';
 
 export default function MicButton() {
   const { addMessage, isStreaming } = useStore();
@@ -38,7 +39,7 @@ export default function MicButton() {
           const formData = new FormData();
           formData.append('audio', audioBlob);
           
-          const response = await fetch('/api/transcribe', {
+          const response = await fetch(TRANSCRIBE_ENDPOINT, {
             method: 'POST',
             body: formData,
           });

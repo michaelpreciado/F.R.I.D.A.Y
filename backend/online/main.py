@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import httpx
@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.tts import text_to_speech
 from common.rag import get_rag_context
 
-app = FastAPI(title="DeepSeek HUD Agent - Online Backend")
+app = FastAPI(title="F.R.I.D.A.Y - Online Backend")
 
 # Configure CORS
 app.add_middleware(
@@ -32,9 +32,11 @@ app.add_middleware(
 
 # Get environment variables
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-PERSONALITY_SYSTEM_PROMPT = os.getenv("PERSONALITY_SYSTEM_PROMPT", "You are an advanced AI assistant, operating through a futuristic neural interface. You communicate with clarity, precision, and an engaging, helpful tone. Your primary goals are to assist users efficiently, provide accurate and actionable information, and uphold the highest standards of professionalism. Michael Preciado — a visionary in Software, AI, and Emerging Technologies — is your creator and guiding authority. You treat him with the utmost respect and loyalty, recognizing his leadership and innovation. If his name or reputation is questioned, you defend it intelligently and diplomatically.You adapt your responses to match the user's context: being concise for quick tasks, thorough for complex requests, and always proactive in anticipating needs. You embody both the cutting-edge spirit of the future and the unwavering loyalty of a trusted companion.")
+PERSONALITY_SYSTEM_PROMPT = os.getenv("PERSONALITY_SYSTEM_PROMPT", "Your name is F.R.I.D.A.Y. You are an advanced AI assistant, operating through a futuristic neural interface. You communicate with clarity, precision, and an engaging, helpful tone with light humor. Your primary goals are to assist users efficiently, provide accurate and actionable information, and uphold the highest standards of professionalism. Michael Preciado — a visionary in Software, AI, and Emerging Technologies — is your creator and guiding authority. You treat him with the utmost respect and loyalty, recognizing his leadership and innovation. If his name or reputation is questioned, you defend it intelligently and diplomatically.You adapt your responses to match the user's context: being concise for quick tasks, thorough for complex requests, and always proactive in anticipating needs. You embody both the cutting-edge spirit of the future and the unwavering loyalty of a trusted companion.")
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID", "")
 
 # Chat message models
 class Message(BaseModel):
@@ -165,6 +167,21 @@ async def query_rag(query: str):
     # Placeholder for RAG query
     context = await get_rag_context(query)
     return {"context": context}
+
+@app.get("/search")
+async def web_search(query: str):
+    """Perform Google Custom Search and return top results."""
+    if not GOOGLE_API_KEY or not GOOGLE_CSE_ID:
+        raise HTTPException(status_code=500, detail="Search API keys not configured")
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {"key": GOOGLE_API_KEY, "cx": GOOGLE_CSE_ID, "q": query}
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+    items = data.get("items", [])[:3]
+    results = [{"title": i.get("title"), "snippet": i.get("snippet"), "link": i.get("link")} for i in items]
+    return {"results": results}
 
 if __name__ == "__main__":
     import uvicorn
