@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
+    // Base path for GitHub Pages - should match your repository name
+    base: '/F.R.I.D.A.Y/',
+    
     plugins: [react()],
     resolve: {
       alias: {
@@ -20,7 +23,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: mode === 'local' 
             ? 'http://localhost:8000' 
-            : 'https://api.deepseek-hud-agent.com', // This would be replaced with your actual online API URL
+            : env.VITE_BACKEND_URL || 'https://friday-backend.onrender.com', // Will be set to your Render deployment URL
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },

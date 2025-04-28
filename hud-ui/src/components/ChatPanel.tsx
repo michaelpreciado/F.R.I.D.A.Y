@@ -225,11 +225,13 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
               <div className="max-w-[85%] p-2 md:p-3 rounded-lg bg-neural-gray/30 border border-neon-blue/20 relative overflow-hidden text-sm md:text-base">
                 {/* Animated pulse effect */}
                 <div className="absolute inset-0 bg-neon-blue/5 animate-pulse"></div>
-                <p className="whitespace-pre-wrap relative z-10">
-                  {currentStreamedMessage ? currentStreamedMessage : (
+                {currentStreamedMessage ? (
+                  <p className="whitespace-pre-wrap relative z-10">{currentStreamedMessage}</p>
+                ) : (
+                  <div className="whitespace-pre-wrap relative z-10">
                     <ThinkingAnimation />
-                  )}
-                </p>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

@@ -19,7 +19,12 @@ app = FastAPI(title="DeepSeek HUD Agent - Online Backend")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this to your frontend URL
+    allow_origins=[
+        "http://localhost:5173",  # Local development URL
+        "http://localhost:5174",  # Local development URL (alternate port)
+        "http://localhost:5179",  # Local development URL (alternate port)
+        "https://michaelpreciado.github.io",  # GitHub Pages URL
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

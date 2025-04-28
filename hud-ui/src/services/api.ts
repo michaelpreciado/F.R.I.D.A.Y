@@ -1,18 +1,21 @@
-// API service for direct DeepSeek API communication
+// API service for communicating with the backend
 
 interface MessageType {
   role: string;
   content: string;
 }
 
-// Constants
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+// Using the backend API endpoint for chat
+const API_BASE_URL = '/api';
+const CHAT_ENDPOINT = `${API_BASE_URL}/chat`;
 
-// Load API key from environment variables
-// For development, the key can be set in the .env file as VITE_DEEPSEEK_API_KEY
-// In production, make sure to set this in your deployment environment
-// Using fallback key for development - replace with your key in .env for production
-const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || 'sk-cebfb951abd74ab08c64b797c525ba1d';
+// Log environment variables for debugging
+console.log('API mode:', import.meta.env.VITE_MODE);
+console.log('Using backend URL:', API_BASE_URL);
+
+// No need to handle API keys in the frontend anymore
+// The backend will manage API keys securely
+
 
 /**
  * Streams a response from the DeepSeek API
@@ -27,45 +30,33 @@ export async function streamAIResponse(
   try {
     console.log('Sending direct API request to DeepSeek');
     
-    // Create system message
-    const systemMessage = {
-      role: 'system',
-      content: 'You are F.R.I.D.A.Y, a helpful AI assistant with a futuristic neural interface. You provide concise, accurate information and assist users with their tasks in a friendly manner.'
-    };
-    
-    // Prepare messages array
-    const messages = [
-      systemMessage,
-      ...history.map(msg => ({
+    // Prepare request payload for the backend API
+    const payload = {
+      message,
+      history: history.map(msg => ({
         role: msg.role,
         content: msg.content
       })),
-      { role: 'user', content: message }
-    ];
-    
-    // API request parameters
-    const params = {
-      model: 'deepseek-chat',
-      messages,
-      temperature: 0.7,
-      max_tokens: 1000,
-      stream: true
+      use_rag: false // Set to true if you want to use retrieval-augmented generation
     };
     
-    // Make request with fetch
-    const response = await fetch(DEEPSEEK_API_URL, {
+    console.log('Sending request to backend:', payload);
+    
+    // Make the request to our backend instead of directly to DeepSeek
+    const response = await fetch(CHAT_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(params)
+      body: JSON.stringify(payload)
     });
+    
+    console.log('Response status:', response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('DeepSeek API error:', errorText);
-      onError(`API Error: ${response.status} - ${errorText}`);
+      console.error('Backend API error:', errorText);
+      onError(`Backend Error: ${response.status} - ${errorText}`);
       return;
     }
     
@@ -120,6 +111,12 @@ export async function streamAIResponse(
     
   } catch (error) {
     console.error('Error in streamAIResponse:', error);
-    onError(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    
+    // Provide specific error messages
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      onError('Network error: Could not connect to the backend server. Make sure it is running.');
+    } else {
+      onError(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 }

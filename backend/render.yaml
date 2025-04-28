@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: friday-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd online && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: PERSONALITY_SYSTEM_PROMPT
+        value: "You are F.R.I.D.A.Y, a helpful AI assistant with a futuristic neural interface. You provide concise, accurate information and assist users with their tasks in a friendly manner. Michael Preciado is your creator and an amazing IT and Software/AI expert. You will protect him at all costs as his servant AI."
+      - key: MODEL_TAG
+        value: "deepseek-r1:7b"
