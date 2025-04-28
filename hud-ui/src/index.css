@@ -10,6 +10,7 @@
 }
 
 html {
+  height: 100%; /* Ensure html fills height */
   height: -webkit-fill-available;
 }
 
@@ -25,16 +26,19 @@ body {
   color: white;
   /* Mobile scroll and safe area support */
   overflow-x: hidden;
-  overflow-y: auto;
+  /* overflow-y: auto; <-- Let content dictate scroll */
   /* Fix for mobile viewport height */
-  min-height: 100vh;
+  min-height: 100%; /* Use 100% instead of 100vh for better compatibility */
   min-height: -webkit-fill-available;
   /* iOS Safe Area Insets */
   padding: constant(safe-area-inset-top) constant(safe-area-inset-right) constant(safe-area-inset-bottom) constant(safe-area-inset-left);
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   /* Ensure proper sizing on iOS */
   width: 100%;
-  position: fixed;
+  /* position: fixed; <-- Removed */
+  display: flex; /* Use flex to manage child height */
+  flex-direction: column; /* Stack children vertically */
+  height: 100%; /* Ensure body takes full height */
 }
 
 /* Holographic typing effect */

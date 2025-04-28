@@ -7,15 +7,15 @@ function App() {
   const [ttsEnabled, setTtsEnabled] = useState(true);
 
   return (
-    <div className="relative min-h-screen w-full">
+    <div className="relative min-h-screen w-full flex flex-col">
       {/* 3D Background */}
       <NeonBackground />
       
-      {/* Main Content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-start p-4 overflow-hidden">
+      {/* Main Content Wrapper - Adjusted for flex layout */}
+      <div className="absolute inset-0 flex flex-col items-center p-4 overflow-hidden"> 
         <div className="w-full max-w-4xl h-full flex flex-col">
-          {/* Header - Always visible with higher z-index */}
-          <div className="flex items-center justify-between mb-2 md:mb-4 px-1 py-2 sticky top-0 z-20 bg-neural-gray/30 backdrop-blur-md rounded-lg">
+          {/* Header - Remains sticky */} 
+          <div className="flex items-center justify-between mb-2 md:mb-4 px-1 py-2 sticky top-0 z-20 bg-neural-gray/30 backdrop-blur-md rounded-lg flex-shrink-0">
             <h1 className="friday-title text-xl md:text-2xl font-bold tracking-wider relative z-10">
               <span className="relative" data-letter="F">F</span>
               <span className="relative" data-letter=".">.</span>
@@ -51,15 +51,15 @@ function App() {
             </div>
           </div>
           
-          {/* Adjusted layout structure with fixed heights */}
-          <div className="flex flex-col space-y-2 h-[calc(100vh-130px)]">
-            {/* Chat Panel - Set to take most of the available space */}
+          {/* Content Area - Use flex-1 to fill remaining space */}
+          <div className="flex flex-col flex-1 min-h-0 space-y-2">
+            {/* Chat Panel - Takes most space */}
             <div className="flex-1 min-h-0">
               <ChatPanel ttsEnabled={ttsEnabled} />
             </div>
             
-            {/* Mic Button - Fixed position right below chat panel */}
-            <div className="flex justify-center py-1">
+            {/* Mic Button - Stays at the bottom */}
+            <div className="flex justify-center py-1 flex-shrink-0"> 
               <MicButton />
             </div>
           </div>
@@ -67,7 +67,7 @@ function App() {
       </div>
       
       {/* Footer with creator attribution */}
-      <div className="absolute bottom-1 md:bottom-2 w-full text-center z-10">
+      <div className="absolute bottom-1 md:bottom-2 w-full text-center z-10 flex-shrink-0"> 
         <p className="text-xs text-neon-blue/70">Created by MP</p>
       </div>
     </div>
