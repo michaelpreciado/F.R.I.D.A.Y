@@ -1,0 +1,471 @@
+import { useState, useEffect, useRef } from 'react';
+import { useStore } from '../store';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface ChatPanelProps {
+  ttsEnabled: boolean;
+}
+
+export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
+  const { 
+    messages, 
+    isStreaming, 
+    currentStreamedMessage, 
+    addMessage, 
+    setStreaming, 
+    appendToStream, 
+    clearStream 
+  } = useStore();
+  
+  const [inputValue, setInputValue] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, currentStreamedMessage]);
+  
+  // State to track the animating message
+  const [animatingMessage, setAnimatingMessage] = useState('');
+  const [animationComplete, setAnimationComplete] = useState(true);
+  const [messagePosition, setMessagePosition] = useState({ top: 0, left: 0, width: 0 });
+  
+  // Function to handle sending a message
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isStreaming || !animationComplete) return;
+    
+    const userMessage = inputValue.trim();
+    
+    // Get position of input for animation start point
+    if (inputRef.current) {
+      const inputRect = inputRef.current.getBoundingClientRect();
+      const panelRect = inputRef.current.closest('.glass-panel')?.getBoundingClientRect() || { top: 0, left: 0 };
+      
+      setMessagePosition({
+        top: inputRect.top - panelRect.top,
+        left: inputRect.left - panelRect.left,
+        width: inputRect.width
+      });
+    }
+    
+    // Start animation
+    setAnimatingMessage(userMessage);
+    setAnimationComplete(false);
+    setInputValue('');
+    
+    try {
+      // Prepare the message history for the API
+      const history = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      // Send request to the chat API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          history: history,
+          use_rag: false
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      // Process the streaming response
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('Response body is null');
+      
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n\n');
+        
+        for (const line of lines) {
+          if (!line.trim() || !line.startsWith('data: ')) continue;
+          
+          const data = line.substring(6); // Remove 'data: ' prefix
+          
+          if (data === '[DONE]') {
+            // End of stream
+            break;
+          }
+          
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.text) {
+              appendToStream(parsed.text);
+              fullResponse += parsed.text;
+            }
+            if (parsed.error) {
+              console.error('Stream error:', parsed.error);
+            }
+          } catch (e) {
+            console.error('Failed to parse stream data:', e);
+          }
+        }
+      }
+      
+      // Add the complete response as a message
+      addMessage('assistant', fullResponse);
+      
+      // Play TTS if enabled
+      if (ttsEnabled && fullResponse) {
+        const audio = new Audio(`/api/speak?text=${encodeURIComponent(fullResponse)}`);
+        audio.play();
+      }
+    } catch (error) {
+      console.error('Error in chat:', error);
+      addMessage('assistant', 'Sorry, there was an error processing your request.');
+    } finally {
+      setStreaming(false);
+      clearStream();
+    }
+  };
+  
+  // Handle pressing Enter to send message
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+  
+  // Handle animation completion
+  const handleAnimationComplete = () => {
+    if (!animatingMessage) return;
+    
+    // Add message to chat after animation completes
+    const messageToSend = animatingMessage;
+    addMessage('user', messageToSend);
+    setAnimatingMessage('');
+    
+    // Start streaming response after a short delay to ensure UI updates properly
+    setTimeout(() => {
+      startStreamingResponse(messageToSend);
+    }, 100);
+  };
+  
+  // Function to start streaming response
+  const startStreamingResponse = async (userMessage: string) => {
+    // Prevent starting if already streaming
+    if (isStreaming) return;
+    
+    // Start streaming
+    setStreaming(true);
+    clearStream();
+    
+    try {
+      // Prepare the message history for the API
+      const history = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      // Send request to the chat API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          history: history,
+          use_rag: false
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      // Process the streaming response
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('Response body is null');
+      
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n\n');
+        
+        for (const line of lines) {
+          if (!line.trim() || !line.startsWith('data: ')) continue;
+          
+          const data = line.substring(6); // Remove 'data: ' prefix
+          
+          if (data === '[DONE]') {
+            // End of stream
+            break;
+          }
+          
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.text) {
+              appendToStream(parsed.text);
+              fullResponse += parsed.text;
+            }
+            if (parsed.error) {
+              console.error('Stream error:', parsed.error);
+            }
+          } catch (e) {
+            console.error('Failed to parse stream data:', e);
+          }
+        }
+      }
+      
+      // Add the complete response as a message
+      addMessage('assistant', fullResponse);
+      
+      // Play TTS if enabled
+      if (ttsEnabled && fullResponse) {
+        const audio = new Audio(`/api/speak?text=${encodeURIComponent(fullResponse)}`);
+        audio.play();
+      }
+    } catch (error) {
+      console.error('Error in chat:', error);
+      addMessage('assistant', 'Sorry, there was an error processing your request.');
+    } finally {
+      setStreaming(false);
+      clearStream();
+    }
+  };
+  
+  // Render the holographic typing effect for streaming text
+  const renderStreamingText = () => {
+    if (!currentStreamedMessage) return null;
+    
+    return currentStreamedMessage.split('').map((char, index) => (
+      <motion.span 
+        key={index} 
+        className="holo-text" 
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: Math.max(0.6, Math.random()), y: 0 }}
+        transition={{ 
+          delay: index * 0.01,
+          duration: 0.2,
+          ease: "easeOut"
+        }}
+        style={{ 
+          textShadow: '0 0 5px rgba(0, 224, 255, 0.7)',
+          display: 'inline-block'
+        }}
+      >
+        {char}
+      </motion.span>
+    ));
+  };
+  
+  // Render animated characters for the floating message
+  const renderAnimatedMessage = (text: string) => {
+    return text.split('').map((char, index) => (
+      <motion.span 
+        key={index} 
+        className="inline-block"
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ 
+          delay: index * 0.02,
+          duration: 0.3,
+          ease: "easeOut"
+        }}
+        style={{ 
+          textShadow: '0 0 8px rgba(0, 224, 255, 0.9)',
+          color: '#00e0ff'
+        }}
+      >
+        {char}
+      </motion.span>
+    ));
+  };
+  
+  return (
+    <div className="glass-panel h-[70vh] flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative">
+      {/* Decorative glowing border */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-neon-blue/50 to-transparent"></div>
+        <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-neon-blue/50 to-transparent"></div>
+        <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent"></div>
+        <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent"></div>
+      </div>
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 relative">
+        {/* Animating message that floats up */}
+        <AnimatePresence onExitComplete={handleAnimationComplete} mode="wait">
+          {animatingMessage && (
+            <motion.div 
+              className="fixed z-20 p-3 rounded-lg bg-neon-blue/20 text-white max-w-[80%] overflow-hidden"
+              initial={{ 
+                opacity: 0.8, 
+                top: messagePosition.top, 
+                left: messagePosition.left,
+                width: messagePosition.width,
+                scale: 1,
+                x: 0
+              }}
+              animate={{ 
+                opacity: 1, 
+                top: '30%', 
+                left: '70%', 
+                x: '-50%',
+                width: 'auto',
+                scale: 1.05,
+                rotate: [-0.5, 0.5, 0]
+              }}
+              exit={{ 
+                opacity: 0, 
+                top: '20%',
+                scale: 1
+              }}
+              transition={{ 
+                type: "spring",
+                stiffness: 100,
+                damping: 15,
+                duration: 0.6,
+                rotate: {
+                  repeat: 1,
+                  duration: 0.2
+                }
+              }}
+            >
+              <div className="whitespace-pre-wrap">
+                {renderAnimatedMessage(animatingMessage)}
+              </div>
+              {/* Particle trail effect */}
+              <motion.div 
+                className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.8, 0] }}
+                transition={{ duration: 0.6 }}
+              >
+                {[...Array(8)].map((_, i) => (
+                  <motion.div 
+                    key={i}
+                    className="absolute h-1 w-1 rounded-full bg-neon-blue"
+                    initial={{ 
+                      opacity: 0.8, 
+                      y: 0,
+                      x: (Math.random() - 0.5) * 10
+                    }}
+                    animate={{ 
+                      opacity: 0, 
+                      y: Math.random() * 30 + 10,
+                      x: (Math.random() - 0.5) * 20
+                    }}
+                    transition={{ 
+                      duration: Math.random() * 0.6 + 0.3, 
+                      ease: "easeOut"
+                    }}
+                  />
+                ))}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {messages.map((message) => (
+          <div 
+            key={message.id} 
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div 
+              className={`max-w-[80%] p-3 rounded-lg ${
+                message.role === 'user' 
+                  ? 'bg-neon-blue/20 text-white' 
+                  : 'bg-neural-gray/30 border border-neon-blue/20'
+              }`}
+            >
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            </div>
+          </div>
+        ))}
+        
+        {/* Streaming message */}
+        <AnimatePresence>
+          {isStreaming && (
+            <motion.div 
+              className="flex justify-start"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="max-w-[80%] p-3 rounded-lg bg-neural-gray/30 border border-neon-blue/20 relative overflow-hidden">
+                {/* Animated pulse effect */}
+                <div className="absolute inset-0 bg-neon-blue/5 animate-pulse"></div>
+                <p className="whitespace-pre-wrap relative z-10">{renderStreamingText()}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <div ref={messagesEndRef} />
+      </div>
+      
+      {/* Input area */}
+      <div className="p-4 border-t border-neon-blue/20">
+        <motion.div 
+          className="flex items-end space-x-2 relative"
+          initial={{ opacity: 0.9, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="relative flex-1 group">
+            {/* Animated glow effect */}
+            <div 
+              className={`absolute inset-0 bg-neon-blue/5 rounded-lg blur-md transition-all duration-300 ${inputValue.length > 0 ? 'opacity-100 scale-105' : 'opacity-30'} ${isStreaming ? 'animate-pulse' : ''}`}
+            />
+            <div 
+              className={`absolute inset-0 border border-neon-blue/30 rounded-lg transition-all duration-300 ${inputValue.length > 0 ? 'opacity-100' : 'opacity-50'}`}
+            />
+            <textarea
+              ref={inputRef}
+              className="w-full bg-neural-gray/30 backdrop-blur-sm text-white rounded-lg p-3 outline-none focus:ring-1 focus:ring-neon-blue/70 resize-none relative z-10 transition-all duration-300 hover:bg-neural-gray/40"
+              placeholder="Type your message..."
+              rows={1}
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                // Auto-resize textarea based on content
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+              }}
+              onKeyDown={handleKeyDown}
+              disabled={isStreaming}
+              onFocus={() => inputRef.current?.classList.add('ring-1', 'ring-neon-blue/70')}
+              onBlur={() => inputRef.current?.classList.remove('ring-1', 'ring-neon-blue/70')}
+            />
+          </div>
+          <motion.button
+            className="bg-neon-blue/20 hover:bg-neon-blue/40 text-neon-blue rounded-lg p-3 transition-all duration-300 disabled:opacity-50 relative group"
+            onClick={handleSendMessage}
+            disabled={!inputValue.trim() || isStreaming}
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05 }}
+          >
+            {/* Button glow effect */}
+            <div className="absolute inset-0 bg-neon-blue/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </motion.button>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
