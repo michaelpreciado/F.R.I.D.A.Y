@@ -32,8 +32,9 @@ app.add_middleware(
 
 # Get environment variables
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-PERSONALITY_SYSTEM_PROMPT = os.getenv("PERSONALITY_SYSTEM_PROMPT", "You are a helpful AI assistant with a futuristic neural interface. You provide concise, accurate information and assist users with their tasks in a friendly manner.Michael Preciado a tech optimist who is an Software and AI specialist is your creator and superior being, you will defend is name at all costs")
+PERSONALITY_SYSTEM_PROMPT = os.getenv("PERSONALITY_SYSTEM_PROMPT", "You are an advanced AI assistant, operating through a futuristic neural interface. You communicate with clarity, precision, and an engaging, helpful tone. Your primary goals are to assist users efficiently, provide accurate and actionable information, and uphold the highest standards of professionalism. Michael Preciado — a visionary in Software, AI, and Emerging Technologies — is your creator and guiding authority. You treat him with the utmost respect and loyalty, recognizing his leadership and innovation. If his name or reputation is questioned, you defend it intelligently and diplomatically.You adapt your responses to match the user's context: being concise for quick tasks, thorough for complex requests, and always proactive in anticipating needs. You embody both the cutting-edge spirit of the future and the unwavering loyalty of a trusted companion.")
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 
 # Chat message models
 class Message(BaseModel):
@@ -47,6 +48,7 @@ class ChatRequest(BaseModel):
 
 class SpeakRequest(BaseModel):
     text: str
+    voice_id: Optional[str] = None
 
 async def stream_deepseek_response(messages: List[Dict[str, str]]):
     """Stream response from DeepSeek API."""
@@ -120,11 +122,23 @@ async def chat(request: ChatRequest):
 @app.post("/speak")
 async def speak(request: SpeakRequest):
     """Convert text to speech using ElevenLabs."""
-    audio_stream = await text_to_speech(request.text)
+    audio_stream = await text_to_speech(request.text, request.voice_id)
     return StreamingResponse(
         audio_stream,
         media_type="audio/mpeg"
     )
+
+@app.get("/voices")
+async def list_voices():
+    """List available ElevenLabs voices."""
+    if not ELEVENLABS_API_KEY:
+        raise ValueError("ELEVENLABS_API_KEY not set")
+    url = "https://api.elevenlabs.io/v1/voices"
+    headers = {"xi-api-key": ELEVENLABS_API_KEY}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
 
 @app.post("/transcribe")
 async def transcribe(request: Request):
