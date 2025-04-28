@@ -73,45 +73,88 @@ export async function streamAIResponse(
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
+    let buffer = ''; // Buffer to handle partial lines
     
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+          // Process any remaining buffer content if the stream ends unexpectedly
+          if (buffer.trim()) {
+              console.warn('Stream ended with unprocessed buffer content:', buffer);
+              // Optionally attempt to process the last bit of buffer here if necessary
+          }
+          break;
+      }
       
-      const chunk = decoder.decode(value, { stream: true });
-      console.log('Received chunk:', chunk);
+      buffer += decoder.decode(value, { stream: true });
+      console.log('Received raw data, current buffer:', buffer);
       
-      // Process SSE format
-      const lines = chunk.split('\n\n');
-      for (const line of lines) {
-        if (!line.trim() || !line.startsWith('data: ')) continue;
-        
-        const data = line.substring(6);  // Remove 'data: ' prefix
-        
-        if (data === '[DONE]') {
-          console.log('Stream complete');
+      // Process lines separated by single newline
+      let newlineIndex;
+      while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.substring(0, newlineIndex).trim();
+        buffer = buffer.substring(newlineIndex + 1); // Remove processed line + newline from buffer
+
+        if (!line || !line.startsWith('data: ')) {
+          if (line) console.log('Skipping non-data line:', line);
           continue;
         }
         
+        const data = line.substring(6);  // Remove 'data: ' prefix
+        console.log('Processing data:', data);
+        
+        if (data === '[DONE]') {
+          console.log('Stream complete signal received.');
+          // Call onComplete *now* as the content stream is finished
+          onComplete(fullResponse); 
+          // We might want to break the outer loop here IF the backend guarantees
+          // no more data comes after [DONE]. However, letting reader.read()
+          // return done:true is safer to ensure the reader is fully consumed.
+          // We just need to ensure onComplete isn't called again later.
+          // Let's add a flag.
+          // await reader.cancel(); // Optionally cancel reader if needed
+          // break; // Might break prematurely if more non-content chunks follow
+          fullResponse = ''; // Clear fullResponse to prevent double processing if loop continues
+          continue; // Continue reading until reader signals done, but don't process further data chunks
+        }
+        
+        // If onComplete was already called (due to [DONE]), don't process further data chunks
+        if (fullResponse === '' && data !== '[DONE]') { 
+             console.log('Skipping data after [DONE]:', data);
+             continue;
+        }
+
         try {
           const parsed = JSON.parse(data);
-          if (parsed.choices && 
-              parsed.choices[0] && 
-              parsed.choices[0].delta && 
-              parsed.choices[0].delta.content) {
+          // Assuming structure like: { "text": "..." } based on console logs
+          // Adjust parsing logic if the structure is different
+          if (parsed.text) {
+             const content = parsed.text;
+             console.log('Extracted content:', content);
+             fullResponse += content;
+             onData(content); // Call the callback to update the UI stream
+          } else if (parsed.choices && parsed.choices[0]?.delta?.content) {
+            // Keep original DeepSeek format handling as fallback
             const content = parsed.choices[0].delta.content;
-            console.log('Content:', content);
+            console.log('Extracted DeepSeek content:', content);
             fullResponse += content;
             onData(content);
+          } else {
+             console.log('Parsed data does not contain expected content:', parsed);
           }
         } catch (e) {
-          console.error('Error parsing stream data:', e);
+          console.error('Error parsing stream data JSON:', data, e);
         }
       }
-    }
+    } // End of while loop
     
-    console.log('Stream completed. Full response:', fullResponse);
-    onComplete(fullResponse);
+    console.log('Reader loop finished.');
+    // Ensure onComplete is called if stream ended without [DONE] 
+    // and we have accumulated content. This check prevents calling it twice if [DONE] was received.
+    if (fullResponse !== '') { 
+        console.warn('Stream ended without [DONE] signal, but content was received.');
+        onComplete(fullResponse);
+    }
     
   } catch (error) {
     console.error('Error in streamAIResponse:', error);
