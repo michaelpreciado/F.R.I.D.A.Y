@@ -74,86 +74,100 @@ export async function streamAIResponse(
     const decoder = new TextDecoder();
     let fullResponse = '';
     let buffer = ''; // Buffer to handle partial lines
-    
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-          // Process any remaining buffer content if the stream ends unexpectedly
-          if (buffer.trim()) {
-              console.warn('Stream ended with unprocessed buffer content:', buffer);
-              // Optionally attempt to process the last bit of buffer here if necessary
-          }
-          break;
-      }
-      
-      buffer += decoder.decode(value, { stream: true });
-      console.log('Received raw data, current buffer:', buffer);
-      
-      // Process lines separated by single newline
-      let newlineIndex;
-      while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
-        const line = buffer.substring(0, newlineIndex).trim();
-        buffer = buffer.substring(newlineIndex + 1); // Remove processed line + newline from buffer
+    let streamFinished = false; // Flag to ensure onComplete is called only once
 
-        if (!line || !line.startsWith('data: ')) {
-          if (line) console.log('Skipping non-data line:', line);
-          continue;
+    const processLine = (line: string) => {
+        if (streamFinished || !line || !line.startsWith('data: ')) {
+            if (line && !line.startsWith('data:')) console.log('Skipping non-data line:', line);
+            return;
         }
-        
-        const data = line.substring(6);  // Remove 'data: ' prefix
+
+        const data = line.substring(6).trim(); // Remove 'data: ' prefix and trim
         console.log('Processing data:', data);
-        
+
         if (data === '[DONE]') {
-          console.log('Stream complete signal received.');
-          // Call onComplete *now* as the content stream is finished
-          onComplete(fullResponse); 
-          // We might want to break the outer loop here IF the backend guarantees
-          // no more data comes after [DONE]. However, letting reader.read()
-          // return done:true is safer to ensure the reader is fully consumed.
-          // We just need to ensure onComplete isn't called again later.
-          // Let's add a flag.
-          // await reader.cancel(); // Optionally cancel reader if needed
-          // break; // Might break prematurely if more non-content chunks follow
-          fullResponse = ''; // Clear fullResponse to prevent double processing if loop continues
-          continue; // Continue reading until reader signals done, but don't process further data chunks
+            console.log('Stream complete signal received.');
+            if (!streamFinished) {
+                onComplete(fullResponse); // Call onComplete with the accumulated response
+                streamFinished = true;   // Set flag
+            }
+            return; // Stop processing this line
         }
-        
-        // If onComplete was already called (due to [DONE]), don't process further data chunks
-        if (fullResponse === '' && data !== '[DONE]') { 
-             console.log('Skipping data after [DONE]:', data);
-             continue;
+
+        // If [DONE] was already processed, do not handle more data chunks
+        if (streamFinished) {
+            console.log('Skipping data after [DONE] was processed:', data);
+            return;
         }
 
         try {
-          const parsed = JSON.parse(data);
-          // Assuming structure like: { "text": "..." } based on console logs
-          // Adjust parsing logic if the structure is different
-          if (parsed.text) {
-             const content = parsed.text;
-             console.log('Extracted content:', content);
-             fullResponse += content;
-             onData(content); // Call the callback to update the UI stream
-          } else if (parsed.choices && parsed.choices[0]?.delta?.content) {
-            // Keep original DeepSeek format handling as fallback
-            const content = parsed.choices[0].delta.content;
-            console.log('Extracted DeepSeek content:', content);
-            fullResponse += content;
-            onData(content);
-          } else {
-             console.log('Parsed data does not contain expected content:', parsed);
-          }
+            const parsed = JSON.parse(data);
+            let content = '';
+            if (parsed.text) {
+                content = parsed.text;
+                console.log('Extracted content:', content);
+            } else if (parsed.choices && parsed.choices[0]?.delta?.content) {
+                content = parsed.choices[0].delta.content;
+                console.log('Extracted DeepSeek content:', content);
+            } else {
+                console.log('Parsed data does not contain expected content:', parsed);
+            }
+            
+            if (content) {
+                fullResponse += content;
+                onData(content); // Call the callback to update the UI stream
+            }
         } catch (e) {
-          console.error('Error parsing stream data JSON:', data, e);
+            console.error('Error parsing stream data JSON:', data, e);
         }
-      }
-    } // End of while loop
+    };
     
+    while (true) {
+        const { done, value } = await reader.read();
+        
+        if (value) {
+            buffer += decoder.decode(value, { stream: true });
+            console.log('Received raw data, buffer contains:', buffer.length, 'chars');
+        }
+
+        // Process all complete lines in the buffer
+        let newlineIndex;
+        while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.substring(0, newlineIndex).trim();
+            buffer = buffer.substring(newlineIndex + 1); // Update buffer
+            processLine(line);
+            if (streamFinished) break; // Stop processing lines in this chunk if [DONE] was found
+        }
+        
+        // If stream finished processing lines in this chunk, continue reading
+        if (streamFinished) {
+             // Ensure the reader continues until actually done if necessary,
+             // but don't process further lines.
+             if (done) break; // Break outer loop if reader is also done
+             continue; // Continue reading
+        }
+
+        if (done) {
+            console.log('Reader finished. Processing final buffer content.');
+            // If the stream is done, process any remaining part in the buffer as the last line
+            if (buffer.trim()) {
+                processLine(buffer.trim());
+            }
+            break; // Exit the outer loop
+        }
+    } // End of while (true)
+
     console.log('Reader loop finished.');
-    // Ensure onComplete is called if stream ended without [DONE] 
-    // and we have accumulated content. This check prevents calling it twice if [DONE] was received.
-    if (fullResponse !== '') { 
-        console.warn('Stream ended without [DONE] signal, but content was received.');
-        onComplete(fullResponse);
+    
+    // Final check: If stream ended WITHOUT the [DONE] signal being processed
+    if (!streamFinished) {
+        if (fullResponse) {
+            console.warn('Stream ended without [DONE] signal, but content was received.');
+            onComplete(fullResponse); // Call onComplete with whatever was received
+        } else {
+            console.warn('Stream ended without [DONE] signal and without receiving content.');
+            onError("Stream ended unexpectedly without data or a DONE signal.");
+        }
     }
     
   } catch (error) {
