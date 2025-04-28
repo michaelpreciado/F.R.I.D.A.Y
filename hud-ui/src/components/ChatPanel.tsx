@@ -88,11 +88,25 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, currentStreamedMessage]);
+  
+  // Adjust chat panel position when mobile keyboard appears
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const updateHeight = () => {
+      const offset = window.innerHeight - viewport.height;
+      setKeyboardHeight(offset > 0 ? offset : 0);
+    };
+    viewport.addEventListener('resize', updateHeight);
+    updateHeight();
+    return () => viewport.removeEventListener('resize', updateHeight);
+  }, []);
   
   // Animation states - removed the redundant messagePosition state
   
@@ -185,7 +199,13 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
   };
   
   return (
-    <div id="chat-panel" className="glass-panel h-full w-full flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative chat-container">
+    <motion.div
+      id="chat-panel"
+      className="glass-panel h-full w-full flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative chat-container"
+      initial={{ y: 0 }}
+      animate={{ y: -keyboardHeight }}
+      transition={{ type: 'tween', ease: 'easeOut', duration: 0.3 }}
+    >
       {/* Particle Effect */}
       <ParticleEffect 
         containerId="chat-panel" 
@@ -322,6 +342,6 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
           </motion.button>
         </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
