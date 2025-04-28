@@ -9,6 +9,10 @@
   --neural-gray: #2a2a3a;
 }
 
+html {
+  height: -webkit-fill-available;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -22,9 +26,15 @@ body {
   /* Mobile scroll and safe area support */
   overflow-x: hidden;
   overflow-y: auto;
+  /* Fix for mobile viewport height */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
   /* iOS Safe Area Insets */
   padding: constant(safe-area-inset-top) constant(safe-area-inset-right) constant(safe-area-inset-bottom) constant(safe-area-inset-left);
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* Ensure proper sizing on iOS */
+  width: 100%;
+  position: fixed;
 }
 
 /* Holographic typing effect */
@@ -50,6 +60,7 @@ body {
   background: linear-gradient(45deg, var(--neon-blue), #ff00ff, var(--neon-blue));
   background-size: 200% 200%;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: holo-gradient 3s ease infinite;
   text-shadow: 0 2px 2px rgba(0,0,0,0.3), 0 0 10px rgba(0,224,255,0.7), 0 0 20px rgba(255,0,255,0.5);
@@ -61,6 +72,82 @@ body {
   100% { background-position: 0% 50%; }
 }
 
+/* Advanced F.R.I.D.A.Y title with holographic effect */
+.friday-title {
+  color: transparent;
+  text-shadow: 0 0 3px rgba(0,224,255,0.3);
+  letter-spacing: 0.1em;
+  position: relative;
+}
+
+.friday-title span {
+  display: inline-block;
+  color: var(--neon-blue);
+  animation: friday-letter-glow 4s infinite alternate;
+  position: relative;
+  z-index: 1;
+}
+
+.friday-title span::before {
+  content: attr(data-letter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--neon-blue);
+  filter: blur(8px);
+  opacity: 0.7;
+  animation: friday-letter-flicker 5s infinite;
+  z-index: -1;
+}
+
+/* Removed the flying glow animation as requested */
+
+.friday-title span:nth-child(1) { animation-delay: 0.0s; }
+.friday-title span:nth-child(2) { animation-delay: 0.1s; }
+.friday-title span:nth-child(3) { animation-delay: 0.2s; }
+.friday-title span:nth-child(4) { animation-delay: 0.3s; }
+.friday-title span:nth-child(5) { animation-delay: 0.4s; }
+.friday-title span:nth-child(6) { animation-delay: 0.5s; }
+.friday-title span:nth-child(7) { animation-delay: 0.6s; }
+.friday-title span:nth-child(8) { animation-delay: 0.7s; }
+.friday-title span:nth-child(9) { animation-delay: 0.8s; }
+.friday-title span:nth-child(10) { animation-delay: 0.9s; }
+.friday-title span:nth-child(11) { animation-delay: 1.0s; }
+
+@keyframes friday-letter-glow {
+  0%, 35% { 
+    text-shadow: 
+      0 0 8px var(--neon-blue),
+      0 0 12px var(--neon-blue),
+      0 0 16px var(--neon-blue);
+    opacity: 0.9;
+  }
+  60%, 65% { 
+    text-shadow: 0 0 4px var(--neon-blue);
+    opacity: 0.8;
+  }
+  100% { 
+    text-shadow: 
+      0 0 8px var(--neon-blue),
+      0 0 12px var(--neon-blue),
+      0 0 20px var(--neon-blue);
+    opacity: 1;
+  }
+}
+
+@keyframes friday-letter-flicker {
+  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+    opacity: 0.7;
+    filter: blur(8px);
+  }
+  20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+    opacity: 0.3;
+    filter: blur(4px);
+  }
+}
+
+/* Removed unused animation */
+
 /* Glassmorphism */
 .glass-panel {
   @apply backdrop-blur bg-white/5 border border-cyan-400/10 shadow-neon rounded-lg;
@@ -70,6 +157,74 @@ body {
 .pulse-blue {
   @apply animate-pulse-slow;
   box-shadow: 0 0 15px rgba(0, 224, 255, 0.5);
+}
+
+/* Animation utilities */
+@keyframes pulse-very-slow {
+  0%, 100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-pulse-very-slow {
+  animation: pulse-very-slow 6s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Message bubble effects */
+.message-bubble {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.message-bubble:hover {
+  box-shadow: 0 0 10px rgba(0, 224, 255, 0.2);
+}
+
+.message-glow-overlay {
+  background: radial-gradient(circle at 50% 50%, transparent 70%, rgba(0, 224, 255, 0.08) 100%);
+}
+
+.user-message::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.5) 50%, transparent);
+  opacity: 0.5;
+}
+
+.assistant-message::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(0, 224, 255, 0.5) 50%, transparent);
+  opacity: 0.3;
+}
+
+/* Chat Container */
+.chat-container {
+  position: relative;
+  perspective: 1000px;
+}
+
+/* 3D subtle tilting effects */
+@media (pointer: fine) {
+  .message-bubble {
+    transition: transform 0.3s ease-out;
+  }
+  
+  .message-bubble:hover {
+    transform: translateZ(5px);
+  }
 }
 
 /* Scrollbar styling */

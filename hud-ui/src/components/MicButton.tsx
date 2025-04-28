@@ -96,7 +96,7 @@ export default function MicButton() {
   
   return (
     <button
-      className={`relative w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${buttonClasses}`}
+      className={`relative w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all duration-300 ${buttonClasses}`}
       onClick={toggleRecording}
       disabled={isStreaming || isProcessing}
       aria-label={isRecording ? 'Stop recording' : 'Start recording'}

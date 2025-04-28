@@ -12,16 +12,28 @@ function App() {
       <NeonBackground />
       
       {/* Main Content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-start md:justify-center p-4 overflow-hidden">
-        <div className="w-full max-w-4xl h-full md:h-auto flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-2 md:mb-4 px-1 py-2">
-            <h1 className="text-xl md:text-2xl font-bold text-neon-blue tracking-wider">F.R.I.D.A.Y</h1>
+      <div className="absolute inset-0 flex flex-col items-center justify-start p-4 overflow-hidden">
+        <div className="w-full max-w-4xl h-full flex flex-col">
+          {/* Header - Always visible with higher z-index */}
+          <div className="flex items-center justify-between mb-2 md:mb-4 px-1 py-2 sticky top-0 z-20 bg-neural-gray/30 backdrop-blur-md rounded-lg">
+            <h1 className="friday-title text-xl md:text-2xl font-bold tracking-wider relative z-10">
+              <span className="relative" data-letter="F">F</span>
+              <span className="relative" data-letter=".">.</span>
+              <span className="relative" data-letter="R">R</span>
+              <span className="relative" data-letter=".">.</span>
+              <span className="relative" data-letter="I">I</span>
+              <span className="relative" data-letter=".">.</span>
+              <span className="relative" data-letter="D">D</span>
+              <span className="relative" data-letter=".">.</span>
+              <span className="relative" data-letter="A">A</span>
+              <span className="relative" data-letter=".">.</span>
+              <span className="relative" data-letter="Y">Y</span>
+            </h1>
             
             <div className="flex items-center space-x-3 md:space-x-4">
               {/* TTS Toggle */}
               <div className="flex items-center">
-                <span className="mr-1 md:mr-2 text-xs md:text-sm">Voice</span>
+                <span className="mr-1 md:mr-2 text-xs md:text-sm text-white">Voice</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input 
                     type="checkbox" 
@@ -39,14 +51,17 @@ function App() {
             </div>
           </div>
           
-          {/* Chat Panel */}
-          <div className="flex-1 flex flex-col min-h-0">
-            <ChatPanel ttsEnabled={ttsEnabled} />
-          </div>
-          
-          {/* Mic Button */}
-          <div className="flex justify-center mt-2 md:mt-4 mb-1 md:mb-0">
-            <MicButton />
+          {/* Adjusted layout structure with fixed heights */}
+          <div className="flex flex-col space-y-2 h-[calc(100vh-130px)]">
+            {/* Chat Panel - Set to take most of the available space */}
+            <div className="flex-1 min-h-0">
+              <ChatPanel ttsEnabled={ttsEnabled} />
+            </div>
+            
+            {/* Mic Button - Fixed position right below chat panel */}
+            <div className="flex justify-center py-1">
+              <MicButton />
+            </div>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { streamAIResponse } from '../services/api';
+import ParticleEffect from './ParticleEffect';
 
 interface ChatPanelProps {
   ttsEnabled: boolean;
@@ -184,32 +185,63 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
   };
   
   return (
-    <div className="glass-panel h-[60vh] md:h-[70vh] w-full flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative">
+    <div id="chat-panel" className="glass-panel h-full w-full flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative chat-container">
+      {/* Particle Effect */}
+      <ParticleEffect 
+        containerId="chat-panel" 
+        particleCount={30} 
+        color="#00e0ff" 
+        size={1.5} 
+        speed={0.2} 
+        opacity={0.4} 
+      />
+      
       {/* Decorative glowing border */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-neon-blue/50 to-transparent"></div>
-        <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-neon-blue/50 to-transparent"></div>
-        <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent"></div>
-        <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent"></div>
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-neon-blue/50 to-transparent animate-pulse-slow"></div>
+        <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-neon-blue/50 to-transparent animate-pulse-slow"></div>
+        <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent animate-pulse-slow"></div>
+        <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent animate-pulse-slow"></div>
       </div>
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4 relative">
         
         {messages.map((message) => (
-          <div 
+          <motion.div 
             key={message.id} 
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              type: 'spring', 
+              stiffness: 260, 
+              damping: 20,
+              duration: 0.5 
+            }}
           >
-            <div 
-              className={`max-w-[85%] p-2 md:p-3 rounded-lg text-sm md:text-base ${
+            <motion.div 
+              className={`max-w-[85%] p-2 md:p-3 rounded-lg text-sm md:text-base relative overflow-hidden message-bubble ${
                 message.role === 'user' 
-                  ? 'bg-neon-blue/20 text-white' 
-                  : 'bg-neural-gray/30 border border-neon-blue/20'
+                  ? 'bg-neon-blue/20 text-white user-message' 
+                  : 'bg-neural-gray/30 border border-neon-blue/20 assistant-message'
               }`}
+              whileHover={{
+                scale: 1.01,
+                transition: { duration: 0.2 }
+              }}
             >
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            </div>
-          </div>
+              {/* Decorative message bubble elements */}
+              <div className="absolute inset-0 pointer-events-none message-glow-overlay"></div>
+              
+              {message.role === 'assistant' && (
+                <div className="absolute -inset-1 bg-neon-blue/5 blur-md rounded-lg animate-pulse-very-slow"></div>
+              )}
+              
+              <div className="relative z-10">
+                <p className="whitespace-pre-wrap">{message.content}</p>
+              </div>
+            </motion.div>
+          </motion.div>
         ))}
         
         {/* Streaming message */}
