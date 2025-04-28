@@ -204,7 +204,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
       className="glass-panel h-full w-full flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative chat-container"
       initial={{ y: 0 }}
       animate={{ y: -keyboardHeight }}
-      transition={{ type: 'tween', ease: 'easeOut', duration: 0.3 }}
+      transition={{ type: 'tween', ease: 'easeInOut', duration: 0.5 }}
     >
       {/* Particle Effect */}
       <ParticleEffect 
@@ -310,7 +310,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
             />
             <textarea
               ref={inputRef}
-              className="w-full bg-neural-gray/30 backdrop-blur-sm text-white rounded-lg p-2 md:p-3 text-sm md:text-base outline-none focus:ring-1 focus:ring-neon-blue/70 resize-none relative z-10 transition-all duration-300 hover:bg-neural-gray/40"
+              className="w-full bg-neural-gray/30 backdrop-blur-sm text-white rounded-lg p-2 md:p-3 text-base outline-none focus:ring-1 focus:ring-neon-blue/70 resize-none relative z-10 transition-all duration-300 hover:bg-neural-gray/40"
               placeholder="Type your message..."
               rows={1}
               value={inputValue}
