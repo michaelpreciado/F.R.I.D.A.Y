@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useMemo } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, shaderMaterial } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore } from '../store';
 import { extend } from '@react-three/fiber';
