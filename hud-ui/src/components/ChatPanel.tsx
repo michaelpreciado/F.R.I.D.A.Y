@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { streamAIResponse, webSearch } from '../services/api';
+import { streamAIResponse } from '../services/api';
 
 interface ChatPanelProps {
   ttsEnabled: boolean;
@@ -175,26 +175,6 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
   
   // Removed renderAnimatedMessage since we're not using animation
   
-  // Handle web search queries
-  const handleWebSearch = async () => {
-    const q = prompt('Enter search query:');
-    if (!q?.trim()) return;
-    addMessage('user', q);
-    setIsProcessing(true);
-    try {
-      const results = await webSearch(q);
-      const content = results.length
-        ? `Search results for "${q}":\n\n` + results.map((r, i) => `${i+1}. ${r.title}\n${r.snippet}\n${r.link}`).join('\n\n')
-        : `No results found for "${q}".`;
-      addMessage('assistant', content);
-    } catch (err) {
-      console.error('Search error:', err);
-      addMessage('assistant', `⚠️ Search failed: ${err instanceof Error ? err.message : err}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-  
   // Handle pressing Enter to send message
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -204,7 +184,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
   };
   
   return (
-    <div className="glass-panel h-full md:h-[70vh] w-full flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative">
+    <div className="glass-panel h-[60vh] md:h-[70vh] w-full flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative">
       {/* Decorative glowing border */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-neon-blue/50 to-transparent"></div>
@@ -306,19 +286,6 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
             <div className="absolute inset-0 bg-neon-blue/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </motion.button>
-          <motion.button
-            className="bg-neon-blue/20 hover:bg-neon-blue/40 text-neon-blue rounded-lg p-2 md:p-3 transition-all duration-300 disabled:opacity-50 relative group"
-            onClick={handleWebSearch}
-            disabled={isProcessing}
-            whileTap={{ scale: 0.95 }}
-            whileHover={{ scale: 1.05 }}
-            aria-label="Search web"
-          >
-            <div className="absolute inset-0 bg-neon-blue/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 4a6 6 0 014.472 9.947l4.387 4.386-1.414 1.415-4.386-4.387A6 6 0 1110 4z" />
             </svg>
           </motion.button>
         </motion.div>

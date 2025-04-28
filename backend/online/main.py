@@ -100,6 +100,18 @@ async def chat(request: ChatRequest):
     # Add system message
     messages.append({"role": "system", "content": PERSONALITY_SYSTEM_PROMPT})
     
+    # Automatic web search context for user query
+    try:
+        search_resp = await web_search(request.message)
+        results = search_resp.get("results", [])
+        if results:
+            search_text = "Relevant web search results:\n\n"
+            for i, item in enumerate(results, 1):
+                search_text += f"{i}. {item['title']}\n{item['snippet']}\n{item['link']}\n\n"
+            messages.append({"role": "system", "content": search_text})
+    except Exception as e:
+        print(f"Web search error: {e}")
+    
     # Get RAG context if enabled
     if request.use_rag:
         rag_context = await get_rag_context(request.message)

@@ -45,6 +45,22 @@ body {
   }
 }
 
+/* Holographic 3D title effect */
+.holo-title {
+  background: linear-gradient(45deg, var(--neon-blue), #ff00ff, var(--neon-blue));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: holo-gradient 3s ease infinite;
+  text-shadow: 0 2px 2px rgba(0,0,0,0.3), 0 0 10px rgba(0,224,255,0.7), 0 0 20px rgba(255,0,255,0.5);
+}
+
+@keyframes holo-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* Glassmorphism */
 .glass-panel {
   @apply backdrop-blur bg-white/5 border border-cyan-400/10 shadow-neon rounded-lg;

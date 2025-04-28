@@ -9,8 +9,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
-    // Base path for GitHub Pages - should match your repository name
-    base: '/F.R.I.D.A.Y/',
+    // Use repo base only in production; root in development
+    base: mode === 'production' ? '/F.R.I.D.A.Y/' : '/',
     
     plugins: [react()],
     resolve: {
