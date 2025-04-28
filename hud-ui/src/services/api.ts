@@ -5,13 +5,17 @@ interface MessageType {
   content: string;
 }
 
-// Using the backend API endpoint for chat
-const API_BASE_URL = '/api';
+// Determine backend URL based on mode
+const API_BASE_URL = import.meta.env.MODE === 'production' 
+  ? import.meta.env.VITE_BACKEND_URL || 'https://friday-backend.onrender.com' // Use Render URL in production
+  : '/api'; // Use Vite proxy in development
+
 const CHAT_ENDPOINT = `${API_BASE_URL}/chat`;
 
 // Log environment variables for debugging
-console.log('API mode:', import.meta.env.VITE_MODE);
+console.log('API mode:', import.meta.env.MODE);
 console.log('Using backend URL:', API_BASE_URL);
+console.log('Chat endpoint:', CHAT_ENDPOINT);
 
 // No need to handle API keys in the frontend anymore
 // The backend will manage API keys securely
