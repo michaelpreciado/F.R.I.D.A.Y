@@ -48,7 +48,7 @@ const ThinkingAnimation = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prevIndex) => (prevIndex + 1) % dots.length);
-    }, 500);
+    }, 200);
     
     return () => clearInterval(interval);
   }, []);
@@ -65,7 +65,7 @@ const ThinkingAnimation = () => {
         }}
         transition={{ 
           repeat: Infinity, 
-          duration: 1.5,
+          duration: 0.8,
           ease: "easeInOut"
         }}
       />
@@ -86,13 +86,13 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
   
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages, currentStreamedMessage]);
   
   // Adjust chat panel position when mobile keyboard appears
@@ -201,19 +201,19 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
   return (
     <motion.div
       id="chat-panel"
-      className="glass-panel h-full w-full flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative chat-container"
+      className="glass-panel w-full max-h-[32rem] flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative chat-container"
       initial={{ y: 0 }}
       animate={{ y: -keyboardHeight }}
-      transition={{ type: 'tween', ease: 'easeInOut', duration: 0.5 }}
+      transition={{ type: 'tween', ease: 'easeInOut', duration: 0.2 }}
     >
       {/* Particle Effect */}
       <ParticleEffect 
         containerId="chat-panel" 
-        particleCount={30} 
+        particleCount={20} 
         color="#00e0ff" 
-        size={1.5} 
-        speed={0.2} 
-        opacity={0.4} 
+        size={1} 
+        speed={0.1} 
+        opacity={0.3} 
       />
       
       {/* Decorative glowing border */}
@@ -223,31 +223,32 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
         <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent animate-pulse-slow"></div>
         <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent animate-pulse-slow"></div>
       </div>
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4 relative">
+      
+      {/* Messages area - Much larger height */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 relative min-h-0 max-h-96">
         
         {messages.map((message) => (
           <motion.div 
             key={message.id} 
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ 
               type: 'spring', 
-              stiffness: 260, 
-              damping: 20,
-              duration: 0.5 
+              stiffness: 400,
+              damping: 30,
+              duration: 0.15 
             }}
           >
             <motion.div 
-              className={`max-w-[85%] p-2 md:p-3 rounded-lg text-sm md:text-base relative overflow-hidden message-bubble ${
+              className={`max-w-[80%] p-2 rounded-lg text-sm relative overflow-hidden message-bubble ${
                 message.role === 'user' 
                   ? 'bg-neon-blue/20 text-white user-message' 
                   : 'bg-neural-gray/30 border border-neon-blue/20 assistant-message'
               }`}
               whileHover={{
                 scale: 1.01,
-                transition: { duration: 0.2 }
+                transition: { duration: 0.1 }
               }}
             >
               {/* Decorative message bubble elements */}
@@ -269,12 +270,12 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
           {isStreaming && (
             <motion.div 
               className="flex justify-start"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.1 }}
             >
-              <div className="max-w-[85%] p-2 md:p-3 rounded-lg bg-neural-gray/30 border border-neon-blue/20 relative overflow-hidden text-sm md:text-base">
+              <div className="max-w-[80%] p-2 rounded-lg bg-neural-gray/30 border border-neon-blue/20 relative overflow-hidden text-sm">
                 {/* Animated pulse effect */}
                 <div className="absolute inset-0 bg-neon-blue/5 animate-pulse"></div>
                 {currentStreamedMessage ? (
@@ -292,13 +293,13 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Input area */}
-      <div className="p-2 md:p-4 border-t border-neon-blue/20">
+      {/* Input area - Compact */}
+      <div className="p-3 border-t border-neon-blue/20">
         <motion.div 
-          className="flex items-end space-x-2 relative"
-          initial={{ opacity: 0.9, y: 10 }}
+          className="flex items-center space-x-2 relative"
+          initial={{ opacity: 0.9, y: 2 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.15 }}
         >
           <div className="relative flex-1 group">
             {/* Animated glow effect */}
@@ -308,18 +309,13 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
             <div 
               className={`absolute inset-0 border border-neon-blue/30 rounded-lg transition-all duration-300 ${inputValue.length > 0 ? 'opacity-100' : 'opacity-50'}`}
             />
-            <textarea
+            <input
               ref={inputRef}
-              className="w-full bg-neural-gray/30 backdrop-blur-sm text-white rounded-lg p-2 md:p-3 text-base outline-none focus:ring-1 focus:ring-neon-blue/70 resize-none relative z-10 transition-all duration-300 hover:bg-neural-gray/40"
-              placeholder="Type your message..."
-              rows={1}
+              type="text"
+              className="w-full bg-neural-gray/30 backdrop-blur-sm text-white rounded-lg p-3 text-sm outline-none focus:ring-1 focus:ring-neon-blue/70 relative z-10 transition-all duration-300 hover:bg-neural-gray/40"
+              placeholder="Chat message"
               value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                // Auto-resize textarea based on content
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
-              }}
+              onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isProcessing}
               onFocus={() => inputRef.current?.classList.add('ring-1', 'ring-neon-blue/70')}
@@ -327,7 +323,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
             />
           </div>
           <motion.button
-            className="bg-neon-blue/20 hover:bg-neon-blue/40 text-neon-blue rounded-lg p-2 md:p-3 transition-all duration-300 disabled:opacity-50 relative group"
+            className="bg-neon-blue/20 hover:bg-neon-blue/40 text-neon-blue rounded-lg p-3 transition-all duration-300 disabled:opacity-50 relative group flex-shrink-0"
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isProcessing}
             whileTap={{ scale: 0.95 }}
@@ -336,7 +332,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
           >
             {/* Button glow effect */}
             <div className="absolute inset-0 bg-neon-blue/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </motion.button>

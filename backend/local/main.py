@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Response, BackgroundTasks
+from fastapi import FastAPI, Request, Response, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import httpx
@@ -30,6 +30,9 @@ app.add_middleware(
 MODEL_TAG = os.getenv("MODEL_TAG", "deepseek-r1:7b")
 PERSONALITY_SYSTEM_PROMPT = os.getenv("PERSONALITY_SYSTEM_PROMPT", "You are a helpful AI assistant.")
 OLLAMA_BASE_URL = "http://127.0.0.1:11434/api"
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID", "")
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "")
 
 # Chat message models
 class Message(BaseModel):
@@ -43,6 +46,10 @@ class ChatRequest(BaseModel):
 
 class SpeakRequest(BaseModel):
     text: str
+
+class WeatherRequest(BaseModel):
+    latitude: float
+    longitude: float
 
 async def stream_ollama_response(prompt: str):
     """Stream response from Ollama API."""
@@ -131,6 +138,103 @@ async def query_rag(query: str):
     # Placeholder for RAG query
     context = await get_rag_context(query)
     return {"context": context}
+
+@app.get("/search")
+async def web_search(query: str):
+    """Perform Google Custom Search and return top results."""
+    if not GOOGLE_API_KEY or not GOOGLE_CSE_ID:
+        # Provide a helpful fallback response when API keys are not configured
+        return {
+            "results": [
+                {
+                    "title": "Search API Not Configured",
+                    "snippet": "To enable web search functionality, please configure GOOGLE_API_KEY and GOOGLE_CSE_ID environment variables. You can get these from the Google Cloud Console by setting up a Custom Search Engine.",
+                    "link": "https://developers.google.com/custom-search/v1/overview"
+                },
+                {
+                    "title": "Alternative: Ask F.R.I.D.A.Y Directly",
+                    "snippet": f"You can ask F.R.I.D.A.Y about '{query}' directly in the chat. F.R.I.D.A.Y has knowledge that can help answer your questions without requiring web search.",
+                    "link": "#"
+                }
+            ]
+        }
+    
+    try:
+        url = "https://www.googleapis.com/customsearch/v1"
+        params = {"key": GOOGLE_API_KEY, "cx": GOOGLE_CSE_ID, "q": query}
+        
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+        
+        items = data.get("items", [])[:3]
+        results = [{"title": i.get("title"), "snippet": i.get("snippet"), "link": i.get("link")} for i in items]
+        return {"results": results}
+    
+    except Exception as e:
+        # Fallback for any API errors
+        return {
+            "results": [
+                {
+                    "title": "Search Temporarily Unavailable",
+                    "snippet": f"Web search encountered an error: {str(e)}. Please try asking F.R.I.D.A.Y directly in the chat.",
+                    "link": "#"
+                }
+            ]
+        }
+
+@app.post("/weather")
+async def get_weather(request: WeatherRequest):
+    """Get weather data for the provided coordinates."""
+    if not OPENWEATHER_API_KEY:
+        # Return demo weather data when API key is not configured
+        return {
+            "temperature": 22,
+            "condition": "partly cloudy",
+            "icon": "02d",
+            "location": "Demo Location",
+            "humidity": 65,
+            "windSpeed": 3.2,
+            "demo": True
+        }
+    
+    try:
+        url = "https://api.openweathermap.org/data/2.5/weather"
+        params = {
+            "lat": request.latitude,
+            "lon": request.longitude,
+            "appid": OPENWEATHER_API_KEY,
+            "units": "metric"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+        
+        return {
+            "temperature": round(data["main"]["temp"]),
+            "condition": data["weather"][0]["description"],
+            "icon": data["weather"][0]["icon"],
+            "location": data["name"],
+            "humidity": data["main"]["humidity"],
+            "windSpeed": data["wind"]["speed"],
+            "demo": False
+        }
+    
+    except Exception as e:
+        # Fallback to demo data on API errors
+        return {
+            "temperature": 22,
+            "condition": "partly cloudy",
+            "icon": "02d",
+            "location": f"Location ({request.latitude:.1f}, {request.longitude:.1f})",
+            "humidity": 65,
+            "windSpeed": 3.2,
+            "demo": True,
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     import uvicorn

@@ -57,7 +57,11 @@ export async function streamAIResponse(
         role: msg.role,
         content: msg.content
       })),
-      use_rag: false // Set to true if you want to use retrieval-augmented generation
+      use_rag: false, // Set to true if you want to use retrieval-augmented generation
+      // Speed optimization parameters
+      max_tokens: 1000, // Limit response length for faster generation
+      temperature: 0.7, // Slightly lower temperature for more focused responses
+      stream: true // Ensure streaming is enabled
     };
     
     console.log('Sending request to backend:', payload);

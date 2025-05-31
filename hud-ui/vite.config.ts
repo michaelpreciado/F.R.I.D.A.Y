@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: mode === 'local' 
-            ? 'http://localhost:8000' 
+            ? 'http://localhost:8001' 
             : env.VITE_BACKEND_URL || 'https://friday-backend.onrender.com', // Will be set to your Render deployment URL
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),

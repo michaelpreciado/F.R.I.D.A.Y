@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Particle Cloud</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+            color: #eee;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        #controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(30, 30, 30, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 0 20px rgba(0, 224, 255, 0.7);
+            border: 3px solid rgba(0, 224, 255, 0.8);
+            backdrop-filter: blur(5px);
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 280px;
+            color: white;
+            font-size: 16px;
+        }
+        
+        #controls-heading {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #00e0ff;
+            text-shadow: 0 0 10px rgba(0, 224, 255, 0.7);
+            border-bottom: 1px solid rgba(0, 224, 255, 0.5);
+            padding-bottom: 10px;
+        }
+        #controls label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #f0f0f0;
+        }
+        
+        #controls input {
+            margin-top: 5px;
+        }
+        #controls input[type="range"],
+        #controls input[type="color"] {
+            width: 230px;
+            height: 25px;
+        }
+        
+        #controls .control-group {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #controls button {
+            padding: 10px 12px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 3px;
+            transition: all 0.2s ease;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            font-size: 14px;
+        }
+        #controls button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        #title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00e0ff, 0 0 20px #00e0ff;
+            z-index: 20;
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            z-index: 20;
+        }
+        
+        #particleCount {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            z-index: 20;
+        }
+        #controls .button-group {
+            display: flex;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div id="title">Interactive Particle Cloud</div>
+    <div id="info">Click and drag to rotate | Scroll to zoom</div>
+    <div id="particleCount">Particles: 5000</div>
+    <div id="container">
+        <div id="controls">
+            <div id="controls-heading">PARTICLE CONTROLS</div>
+            
+            <div class="control-group">
+                <label for="particle-size">Size:</label>
+                <input type="range" id="particle-size" min="0.1" max="5" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="particle-opacity">Opacity:</label>
+                <input type="range" id="particle-opacity" min="0.1" max="1" step="0.05" value="0.7">
+            </div>
+            
+            <div class="control-group">
+                <label for="particle-color">Color:</label>
+                <input type="color" id="particle-color" value="#00e0ff">
+            </div>
+            
+            <div class="control-group">
+                <label>Shape:</label>
+                <div class="button-group">
+                    <button id="shape-sphere">Sphere</button>
+                    <button id="shape-cube">Cube</button>
+                    <button id="shape-torus">Torus</button>
+                    <button id="shape-spiral">Spiral</button>
+                    <button id="shape-random">Random</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="particle-count">Particle Count: <span id="count-value">5000</span></label>
+                <input type="range" id="particle-count" min="1000" max="10000" step="500" value="5000">
+            </div>
+            
+            <div class="control-group">
+                <label for="rotation-speed">Rotation Speed:</label>
+                <input type="range" id="rotation-speed" min="0" max="0.01" step="0.0005" value="0.002">
+            </div>
+            
+            <div class="control-group">
+                <label for="animation-speed">Animation Speed:</label>
+                <input type="range" id="animation-speed" min="500" max="3000" step="100" value="2000">
+            </div>
+            
+            <div style="text-align: center; margin-top: 10px;">
+                <button id="toggle-mouse-interaction" style="width: 100%; padding: 12px;">Enable Mouse Interaction</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let particlesGeometry, particlesMaterial, particleSystem;
+        let particles = [];
+        let particleCount = 5000;
+        const mouse = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+        let currentShape = 'sphere';
+        let targetPositions = [];
+        let mouseInteractionEnabled = false;
+        let rotationSpeed = 0.002;
+        let animationDuration = 2000;
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        // --- Initialization ---
+        function init() {
+            const container = document.getElementById('container');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.01);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+            
+            // OrbitControls (simulation with mouse events)
+            setupOrbitControls();
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Particles
+            particlesGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const baseColor = new THREE.Color(document.getElementById('particle-color').value);
+
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                // Initialize positions randomly for now, will morph later
+                positions[i3] = (Math.random() - 0.5) * 50;
+                positions[i3 + 1] = (Math.random() - 0.5) * 50;
+                positions[i3 + 2] = (Math.random() - 0.5) * 50;
+                particles.push({ x: positions[i3], y: positions[i3 + 1], z: positions[i3 + 2] }); // Store initial state for Anime.js
+
+                colors[i3] = baseColor.r;
+                colors[i3 + 1] = baseColor.g;
+                colors[i3 + 2] = baseColor.b;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            particlesMaterial = new THREE.PointsMaterial({
+                size: parseFloat(document.getElementById('particle-size').value),
+                vertexColors: true,
+                transparent: true,
+                opacity: parseFloat(document.getElementById('particle-opacity').value),
+                sizeAttenuation: true,
+                depthWrite: false, // Often better for transparent particles
+                blending: THREE.AdditiveBlending // Looks nice for bright particles
+            });
+
+            particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particleSystem);
+
+            // Morph to initial shape
+            calculateTargetPositions(currentShape);
+            morphParticles();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('mousemove', onMouseMove, false);
+            document.addEventListener('mousedown', onMouseDown, false);
+            document.addEventListener('mouseup', onMouseUp, false);
+            document.addEventListener('wheel', onMouseWheel, false);
+            setupControls();
+        }
+
+        // --- Shape Calculations ---
+        function calculateTargetPositions(shape) {
+            targetPositions = [];
+            const radius = 15;
+            const size = 25;
+            const tubeRadius = 4;
+            const torusRadius = 10;
+
+            for (let i = 0; i < particleCount; i++) {
+                let x, y, z;
+                if (shape === 'sphere') {
+                    const phi = Math.acos(-1 + (2 * i) / particleCount);
+                    const theta = Math.sqrt(particleCount * Math.PI) * phi;
+                    x = radius * Math.sin(phi) * Math.cos(theta);
+                    y = radius * Math.sin(phi) * Math.sin(theta);
+                    z = radius * Math.cos(phi);
+                } else if (shape === 'cube') {
+                    // Create a more uniform cube with particles on the surface
+                    const side = Math.floor(Math.random() * 6); // Choose one of 6 sides
+                    const u = Math.random() * 2 - 1;
+                    const v = Math.random() * 2 - 1;
+                    
+                    switch(side) {
+                        case 0: x = -1; y = u; z = v; break; // Left face
+                        case 1: x = 1;  y = u; z = v; break; // Right face
+                        case 2: x = u; y = -1; z = v; break; // Bottom face
+                        case 3: x = u; y = 1;  z = v; break; // Top face
+                        case 4: x = u; y = v; z = -1; break; // Back face
+                        case 5: x = u; y = v; z = 1;  break; // Front face
+                    }
+                    
+                    x *= size / 2;
+                    y *= size / 2;
+                    z *= size / 2;
+                } else if (shape === 'torus') {
+                    const u = (i / particleCount) * Math.PI * 2;
+                    const v = Math.random() * Math.PI * 2;
+                    x = (torusRadius + tubeRadius * Math.cos(v)) * Math.cos(u);
+                    y = (torusRadius + tubeRadius * Math.cos(v)) * Math.sin(u);
+                    z = tubeRadius * Math.sin(v);
+                } else if (shape === 'spiral') {
+                    // Spiral shape
+                    const t = (i / particleCount) * 12 * Math.PI;
+                    const r = (i / particleCount) * radius;
+                    x = r * Math.cos(t);
+                    y = (i / particleCount) * 30 - 15; // Stretch along y-axis
+                    z = r * Math.sin(t);
+                } else if (shape === 'random') {
+                    // Complete random positions in a spherical volume
+                    const radius = 20 * Math.cbrt(Math.random()); // Cube root for uniform volume distribution
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    
+                    x = radius * Math.sin(phi) * Math.cos(theta);
+                    y = radius * Math.sin(phi) * Math.sin(theta);
+                    z = radius * Math.cos(phi);
+                } else {
+                    // Default to sphere if shape is unknown
+                    const phi = Math.acos(-1 + (2 * i) / particleCount);
+                    const theta = Math.sqrt(particleCount * Math.PI) * phi;
+                    x = radius * Math.sin(phi) * Math.cos(theta);
+                    y = radius * Math.sin(phi) * Math.sin(theta);
+                    z = radius * Math.cos(phi);
+                }
+                targetPositions.push({ x, y, z });
+            }
+        }
+
+        // --- Animations ---
+        function morphParticles() {
+            const positionsAttribute = particlesGeometry.getAttribute('position');
+
+            // Use a proxy object for Anime.js to animate multiple values
+            let progress = { value: 0 }; 
+
+            // Store initial positions for lerping
+            const initialPositions = [];
+            for(let i = 0; i < particleCount; i++) {
+                initialPositions.push({ 
+                    x: positionsAttribute.getX(i),
+                    y: positionsAttribute.getY(i),
+                    z: positionsAttribute.getZ(i)
+                });
+            }
+
+            anime({
+                targets: progress, // Animate the progress object
+                value: 1, // Animate from 0 to 1
+                duration: animationDuration,
+                easing: 'easeInOutExpo',
+                update: function() {
+                    // Interpolate positions based on progress
+                    for (let i = 0; i < particleCount; i++) {
+                         const initPos = initialPositions[i];
+                         const targetPos = targetPositions[i];
+                         const currentX = initPos.x + (targetPos.x - initPos.x) * progress.value;
+                         const currentY = initPos.y + (targetPos.y - initPos.y) * progress.value;
+                         const currentZ = initPos.z + (targetPos.z - initPos.z) * progress.value;
+                         
+                         positionsAttribute.setXYZ(i, currentX, currentY, currentZ);
+                    }
+                    positionsAttribute.needsUpdate = true;
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotation based on slider
+            particleSystem.rotation.y += rotationSpeed;
+            particleSystem.rotation.x += rotationSpeed * 0.4;
+
+            // Mouse interaction - makes particles avoid the mouse pointer
+            if (mouseInteractionEnabled) {
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(particleSystem);
+                
+                if (intersects.length > 0) {
+                    const posAttribute = particlesGeometry.getAttribute('position');
+                    const point = intersects[0].point;
+                    const repulsionRadius = 5;
+                    const repulsionStrength = 0.05;
+                    
+                    // Only apply to particles within a certain radius
+                    for (let i = 0; i < particleCount; i++) {
+                        const x = posAttribute.getX(i);
+                        const y = posAttribute.getY(i);
+                        const z = posAttribute.getZ(i);
+                        
+                        const dx = x - point.x;
+                        const dy = y - point.y;
+                        const dz = z - point.z;
+                        
+                        const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                        
+                        if (distance < repulsionRadius) {
+                            // Calculate repulsion vector (normalize * strength * falloff)
+                            const factor = repulsionStrength * (1 - distance/repulsionRadius);
+                            posAttribute.setXYZ(
+                                i,
+                                x + dx * factor,
+                                y + dy * factor,
+                                z + dz * factor
+                            );
+                        }
+                    }
+                    posAttribute.needsUpdate = true;
+                }
+            }
+            
+            // Handle orbit controls simulation if user is dragging
+            if (isDragging) {
+                particleSystem.rotation.y += (lastMouseX - mouse.x) * 0.05;
+                particleSystem.rotation.x += (lastMouseY - mouse.y) * 0.05;
+                lastMouseX = mouse.x;
+                lastMouseY = mouse.y;
+            }
+
+            renderer.render(scene, camera);
+            
+            // Update particle count display
+            document.getElementById('particleCount').textContent = `Particles: ${particleCount}`;
+        }
+
+        // --- Event Handlers ---
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onMouseMove(event) {
+            // Normalize mouse coordinates (-1 to +1)
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        function setupControls() {
+            const sizeSlider = document.getElementById('particle-size');
+            const opacitySlider = document.getElementById('particle-opacity');
+            const colorPicker = document.getElementById('particle-color');
+            const shapeSphere = document.getElementById('shape-sphere');
+            const shapeCube = document.getElementById('shape-cube');
+            const shapeTorus = document.getElementById('shape-torus');
+            const shapeSpiral = document.getElementById('shape-spiral');
+            const shapeRandom = document.getElementById('shape-random');
+            const particleCountSlider = document.getElementById('particle-count');
+            const countValueDisplay = document.getElementById('count-value');
+            const rotationSpeedSlider = document.getElementById('rotation-speed');
+            const animationSpeedSlider = document.getElementById('animation-speed');
+            const toggleMouseInteraction = document.getElementById('toggle-mouse-interaction');
+
+            sizeSlider.addEventListener('input', (e) => {
+                particlesMaterial.size = parseFloat(e.target.value);
+            });
+
+            opacitySlider.addEventListener('input', (e) => {
+                particlesMaterial.opacity = parseFloat(e.target.value);
+            });
+
+            colorPicker.addEventListener('input', (e) => {
+                const newColor = new THREE.Color(e.target.value);
+                const colorsAttribute = particlesGeometry.getAttribute('color');
+                for (let i = 0; i < particleCount; i++) {
+                    colorsAttribute.setXYZ(i, newColor.r, newColor.g, newColor.b);
+                }
+                colorsAttribute.needsUpdate = true;
+                
+                // Also update control panel border color to match
+                document.getElementById('controls').style.boxShadow = `0 0 15px ${e.target.value}40`;
+                document.getElementById('controls').style.borderColor = `${e.target.value}33`;
+            });
+            
+            rotationSpeedSlider.addEventListener('input', (e) => {
+                rotationSpeed = parseFloat(e.target.value);
+            });
+            
+            animationSpeedSlider.addEventListener('input', (e) => {
+                animationDuration = parseInt(e.target.value);
+            });
+            
+            toggleMouseInteraction.addEventListener('click', () => {
+                mouseInteractionEnabled = !mouseInteractionEnabled;
+                toggleMouseInteraction.textContent = mouseInteractionEnabled ? 
+                    "Disable Mouse Interaction" : "Enable Mouse Interaction";
+            });
+            
+            particleCountSlider.addEventListener('input', (e) => {
+                const newCount = parseInt(e.target.value);
+                countValueDisplay.textContent = newCount;
+                
+                // Only rebuild if the change is significant
+                if (Math.abs(newCount - particleCount) >= 500) {
+                    rebuildParticleSystem(newCount);
+                }
+            });
+
+            // Shape buttons
+            shapeSphere.addEventListener('click', () => { 
+                if(currentShape !== 'sphere') {
+                    currentShape = 'sphere';
+                    calculateTargetPositions(currentShape);
+                    morphParticles();
+                }
+            });
+            
+            shapeCube.addEventListener('click', () => { 
+                if(currentShape !== 'cube') {
+                    currentShape = 'cube'; 
+                    calculateTargetPositions(currentShape);
+                    morphParticles();
+                }
+            });
+            
+            shapeTorus.addEventListener('click', () => { 
+                if(currentShape !== 'torus') {
+                    currentShape = 'torus';
+                    calculateTargetPositions(currentShape);
+                    morphParticles();
+                }
+            });
+            
+            shapeSpiral.addEventListener('click', () => { 
+                if(currentShape !== 'spiral') {
+                    currentShape = 'spiral';
+                    calculateTargetPositions(currentShape);
+                    morphParticles();
+                }
+            });
+            
+            shapeRandom.addEventListener('click', () => { 
+                if(currentShape !== 'random') {
+                    currentShape = 'random';
+                    calculateTargetPositions(currentShape);
+                    morphParticles();
+                }
+            });
+        }
+
+        // --- Additional Functions ---
+        function onMouseDown(event) {
+            isDragging = true;
+            lastMouseX = mouse.x;
+            lastMouseY = mouse.y;
+        }
+        
+        function onMouseUp() {
+            isDragging = false;
+        }
+        
+        function onMouseWheel(event) {
+            const zoomSpeed = 1.0;
+            if (event.deltaY > 0) {
+                // Zoom out
+                camera.position.z += zoomSpeed;
+            } else {
+                // Zoom in
+                camera.position.z -= zoomSpeed;
+            }
+            // Clamp to reasonable values
+            camera.position.z = Math.max(5, Math.min(100, camera.position.z));
+        }
+        
+        function setupOrbitControls() {
+            // We're simulating OrbitControls with our own mouse handlers
+            // This function just serves as a placeholder for organization
+        }
+        
+        function rebuildParticleSystem(newCount) {
+            // Remember old properties
+            const oldColor = document.getElementById('particle-color').value;
+            const oldSize = parseFloat(document.getElementById('particle-size').value);
+            const oldOpacity = parseFloat(document.getElementById('particle-opacity').value);
+            
+            // Update the count
+            particleCount = newCount;
+            
+            // Remove old system
+            scene.remove(particleSystem);
+            
+            // Create new geometry
+            particlesGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const baseColor = new THREE.Color(oldColor);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                positions[i3] = (Math.random() - 0.5) * 50;
+                positions[i3 + 1] = (Math.random() - 0.5) * 50;
+                positions[i3 + 2] = (Math.random() - 0.5) * 50;
+                
+                colors[i3] = baseColor.r;
+                colors[i3 + 1] = baseColor.g;
+                colors[i3 + 2] = baseColor.b;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            particlesMaterial = new THREE.PointsMaterial({
+                size: oldSize,
+                vertexColors: true,
+                transparent: true,
+                opacity: oldOpacity,
+                sizeAttenuation: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particleSystem);
+            
+            // Generate shape
+            calculateTargetPositions(currentShape);
+            morphParticles();
+        }
+        
+        // --- Start --- 
+        init();
+        animate();
+
+    </script>
+</body>
+</html>
