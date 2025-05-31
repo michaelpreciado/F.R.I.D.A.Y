@@ -106,18 +106,18 @@ export default function WeatherWidget() {
   if (loading) {
     return (
       <motion.div 
-        className="bg-neural-gray/20 backdrop-blur-md border border-neon-blue/30 rounded-lg p-3 min-w-[200px]"
+        className="bg-neural-gray/20 backdrop-blur-md border border-neon-blue/30 rounded-lg p-2 sm:p-3 min-w-[150px] sm:min-w-[200px]"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
         <div className="flex items-center space-x-2">
           <motion.div
-            className="w-4 h-4 border-2 border-neon-blue border-t-transparent rounded-full"
+            className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-neon-blue border-t-transparent rounded-full"
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           />
-          <span className="text-white text-sm">Loading weather...</span>
+          <span className="text-white text-xs sm:text-sm">Loading...</span>
         </div>
       </motion.div>
     );
@@ -129,21 +129,22 @@ export default function WeatherWidget() {
 
   return (
     <motion.div 
-      className="bg-neural-gray/20 backdrop-blur-md border border-neon-blue/30 rounded-lg p-3 min-w-[200px] hover:bg-neural-gray/30 transition-all duration-300"
+      className="bg-neural-gray/20 backdrop-blur-md border border-neon-blue/30 rounded-lg p-2 sm:p-3 min-w-[150px] sm:min-w-[200px] hover:bg-neural-gray/30 transition-all duration-300 touch-manipulation"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
       {/* Weather Icon and Temperature */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl">{getWeatherIcon(weather.icon)}</span>
+      <div className="flex items-center justify-between mb-1 sm:mb-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          <span className="text-lg sm:text-2xl">{getWeatherIcon(weather.icon)}</span>
           <div>
-            <div className="text-white font-bold text-lg">
+            <div className="text-white font-bold text-sm sm:text-lg">
               {weather.temperature}°C
             </div>
-            <div className="text-neon-blue text-xs capitalize">
+            <div className="text-neon-blue text-xs capitalize truncate max-w-[80px] sm:max-w-none">
               {weather.condition}
             </div>
           </div>
@@ -151,8 +152,8 @@ export default function WeatherWidget() {
       </div>
 
       {/* Location */}
-      <div className="flex items-center space-x-1 mb-2">
-        <svg className="w-3 h-3 text-neon-blue" fill="currentColor" viewBox="0 0 20 20">
+      <div className="flex items-center space-x-1 mb-1 sm:mb-2">
+        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-neon-blue flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
         </svg>
         <span className="text-gray-300 text-xs truncate">
@@ -161,29 +162,29 @@ export default function WeatherWidget() {
       </div>
 
       {/* Additional Info */}
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="grid grid-cols-2 gap-1 sm:gap-2 text-xs">
         <div className="flex items-center space-x-1">
-          <span className="text-neon-blue">💧</span>
+          <span className="text-neon-blue text-xs">💧</span>
           <span className="text-gray-300">{weather.humidity}%</span>
         </div>
         <div className="flex items-center space-x-1">
-          <span className="text-neon-blue">💨</span>
+          <span className="text-neon-blue text-xs">💨</span>
           <span className="text-gray-300">{weather.windSpeed} m/s</span>
         </div>
       </div>
 
       {/* Error indicator */}
       {error && (
-        <div className="mt-2 text-xs text-yellow-400 flex items-center space-x-1">
+        <div className="mt-1 sm:mt-2 text-xs text-yellow-400 flex items-center space-x-1">
           <span>⚠️</span>
-          <span>{error}</span>
+          <span className="truncate">{error}</span>
         </div>
       )}
 
       {/* Refresh button */}
       <motion.button
         onClick={getLocationAndWeather}
-        className="mt-2 w-full text-xs text-neon-blue hover:text-white transition-colors p-1 rounded"
+        className="mt-1 sm:mt-2 w-full text-xs text-neon-blue hover:text-white transition-colors p-1 rounded touch-manipulation"
         whileTap={{ scale: 0.95 }}
       >
         🔄 Refresh

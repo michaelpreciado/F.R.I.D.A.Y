@@ -201,7 +201,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
   return (
     <motion.div
       id="chat-panel"
-      className="glass-panel w-full max-h-[32rem] flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative chat-container"
+      className="glass-panel w-full max-h-[20rem] sm:max-h-[24rem] md:max-h-[32rem] flex flex-col backdrop-blur-md bg-neural-gray/10 border border-neon-blue/20 rounded-lg overflow-hidden shadow-lg relative chat-container"
       initial={{ y: 0 }}
       animate={{ y: -keyboardHeight }}
       transition={{ type: 'tween', ease: 'easeInOut', duration: 0.2 }}
@@ -224,8 +224,8 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
         <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-neon-blue/50 to-transparent animate-pulse-slow"></div>
       </div>
       
-      {/* Messages area - Much larger height */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 relative min-h-0 max-h-96">
+      {/* Messages area - Responsive height */}
+      <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 relative min-h-0 max-h-60 sm:max-h-72 md:max-h-96">
         
         {messages.map((message) => (
           <motion.div 
@@ -241,7 +241,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
             }}
           >
             <motion.div 
-              className={`max-w-[80%] p-2 rounded-lg text-sm relative overflow-hidden message-bubble ${
+              className={`max-w-[85%] sm:max-w-[80%] p-2 sm:p-3 rounded-lg text-xs sm:text-sm relative overflow-hidden message-bubble ${
                 message.role === 'user' 
                   ? 'bg-neon-blue/20 text-white user-message' 
                   : 'bg-neural-gray/30 border border-neon-blue/20 assistant-message'
@@ -250,6 +250,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
                 scale: 1.01,
                 transition: { duration: 0.1 }
               }}
+              whileTap={{ scale: 0.99 }}
             >
               {/* Decorative message bubble elements */}
               <div className="absolute inset-0 pointer-events-none message-glow-overlay"></div>
@@ -259,7 +260,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
               )}
               
               <div className="relative z-10">
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
               </div>
             </motion.div>
           </motion.div>
@@ -275,11 +276,11 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.1 }}
             >
-              <div className="max-w-[80%] p-2 rounded-lg bg-neural-gray/30 border border-neon-blue/20 relative overflow-hidden text-sm">
+              <div className="max-w-[85%] sm:max-w-[80%] p-2 sm:p-3 rounded-lg bg-neural-gray/30 border border-neon-blue/20 relative overflow-hidden text-xs sm:text-sm">
                 {/* Animated pulse effect */}
                 <div className="absolute inset-0 bg-neon-blue/5 animate-pulse"></div>
                 {currentStreamedMessage ? (
-                  <p className="whitespace-pre-wrap relative z-10">{currentStreamedMessage}</p>
+                  <p className="whitespace-pre-wrap relative z-10 leading-relaxed">{currentStreamedMessage}</p>
                 ) : (
                   <div className="whitespace-pre-wrap relative z-10">
                     <ThinkingAnimation />
@@ -293,8 +294,8 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Input area - Compact */}
-      <div className="p-3 border-t border-neon-blue/20">
+      {/* Input area - Mobile optimized */}
+      <div className="p-2 sm:p-3 border-t border-neon-blue/20">
         <motion.div 
           className="flex items-center space-x-2 relative"
           initial={{ opacity: 0.9, y: 2 }}
@@ -312,8 +313,8 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
             <input
               ref={inputRef}
               type="text"
-              className="w-full bg-neural-gray/30 backdrop-blur-sm text-white rounded-lg p-3 text-sm outline-none focus:ring-1 focus:ring-neon-blue/70 relative z-10 transition-all duration-300 hover:bg-neural-gray/40"
-              placeholder="Chat message"
+              className="w-full bg-neural-gray/30 backdrop-blur-sm text-white rounded-lg p-2.5 sm:p-3 text-sm outline-none focus:ring-1 focus:ring-neon-blue/70 relative z-10 transition-all duration-300 hover:bg-neural-gray/40 touch-manipulation"
+              placeholder="Chat with F.R.I.D.A.Y"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -323,7 +324,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
             />
           </div>
           <motion.button
-            className="bg-neon-blue/20 hover:bg-neon-blue/40 text-neon-blue rounded-lg p-3 transition-all duration-300 disabled:opacity-50 relative group flex-shrink-0"
+            className="bg-neon-blue/20 hover:bg-neon-blue/40 text-neon-blue rounded-lg p-2.5 sm:p-3 transition-all duration-300 disabled:opacity-50 relative group flex-shrink-0 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isProcessing}
             whileTap={{ scale: 0.95 }}
@@ -332,7 +333,7 @@ export default function ChatPanel({ ttsEnabled }: ChatPanelProps) {
           >
             {/* Button glow effect */}
             <div className="absolute inset-0 bg-neon-blue/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </motion.button>

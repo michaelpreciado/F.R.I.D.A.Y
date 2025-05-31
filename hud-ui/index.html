@@ -3,9 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#00e0ff" />
     <title>F.R.I.D.A.Y</title>
     <meta name="description" content="A futuristic neural-HUD AI chat agent with local and online modes" />
+    <style>
+      /* Disable text selection on mobile for better UX */
+      * {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+      
+      /* Allow text selection in input fields and chat messages */
+      input, textarea, [contenteditable], .message-bubble {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+      }
+      
+      /* Prevent zoom on input focus on iOS */
+      input[type="text"], input[type="search"], textarea {
+        font-size: 16px;
+      }
+      
+      /* Smooth scrolling */
+      html {
+        scroll-behavior: smooth;
+      }
+      
+      /* Better touch target sizing */
+      button, a, input, [role="button"] {
+        min-height: 44px;
+        min-width: 44px;
+      }
+    </style>
   </head>
   <body class="bg-cyber-black text-white">
     <div id="root"></div>
